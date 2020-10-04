@@ -18,6 +18,8 @@ section '.data' data readable writable
         strIncorSize db 'Incorrect size of vector = %d', 10, 0
         strVecElemI  db '[%d]? ', 0
         strScanInt   db '%d', 0
+        strEndl db '', 10, 0
+        strVecA  db 'Vector A:', 10, 0
         strVecB  db 'Vector B:', 10, 0
         strVecElemOut  db '[%d] = %d', 10, 0
         strPressKey db 'Press any key to exit...', 10, 0
@@ -37,10 +39,16 @@ start:
 
         call VectorGen
 
-        push strVecB
+        push strEndl
         call [printf]
 
-        call VectorOut
+        push strVecA    ; выводим A
+        call [printf]
+        call OutVecA
+
+        push strVecB    ; выводим B
+        call [printf]
+        call OutVecB
 finish:
         push strPressKey
         call [printf]
@@ -148,14 +156,14 @@ AddNeg:
 
 ;--------------------------------------------------------------------------
 
-VectorOut:
+OutVecB:
         mov [tmpStack], esp
         xor ecx, ecx             ; ecx = 0
         mov edx, vecB            ; edx = &vec
-putVecLoop:
+putVecBLoop:
         mov [tmp], edx
         cmp ecx, [vec_size]
-        je endOutputVector       ; to end of loop
+        je endOutVecB       ; to end of loop
         mov [i], ecx
 
         push dword [edx]
@@ -167,11 +175,38 @@ putVecLoop:
         inc ecx
         mov edx, [tmp]
         add edx, 4
-        jmp putVecLoop
+        jmp putVecBLoop
 
-endOutputVector:
+endOutVecB:
         mov esp, [tmpStack]
         ret
+
+OutVecA:
+        mov [tmpStack], esp
+        xor ecx, ecx             ; ecx = 0
+        mov ebx, vecA            ; edx = &vec
+putVecALoop:
+        mov [tmp], ebx
+        cmp ecx, [vec_size]
+        je endOutVecA       ; to end of loop
+        mov [i], ecx
+
+        push dword [ebx]
+        push ecx
+        push strVecElemOut
+        call [printf]
+
+        mov ecx, [i]
+        inc ecx
+        mov ebx, [tmp]
+        add ebx, 4
+        jmp putVecALoop
+
+endOutVecA:
+        mov esp, [tmpStack]
+        ret
+
+
                                                  
 section '.idata' import data readable
     library kernel, 'kernel32.dll',\
