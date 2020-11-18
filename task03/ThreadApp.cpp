@@ -1,9 +1,8 @@
 ﻿#include <iostream>
 #include <iomanip>
-#include <limits>
-#include <ctime>
 #include <thread>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <mutex>
 #include <string>
@@ -21,6 +20,7 @@ vector<vector<float>> readInput(const std::string& input,  unsigned int* n, unsi
 
     vector<vector<float>> matrix(N, vector<float>(N * 2));
 
+    // считываем исходную матрицу
     float num;
     for (unsigned int i = 0; i < N; i++) {
         for (unsigned int j = 0; j < N; j++) {
@@ -29,6 +29,7 @@ vector<vector<float>> readInput(const std::string& input,  unsigned int* n, unsi
         }
     }
 
+    // заполняем единичную матрицу
     for (unsigned int i = 0; i < N; i++) {
         for (unsigned int j = 0; j < N; j++) {
             if (i == j) {
@@ -41,6 +42,18 @@ vector<vector<float>> readInput(const std::string& input,  unsigned int* n, unsi
     }
     return matrix;
 }
+
+void writeOutput(const std::string& output, vector<vector<float>> matrix, unsigned int n) {
+    std::ofstream out(output);
+    
+    for (unsigned int i = 0; i < n; i++) {
+        for (unsigned int j = 0; j < n; j++) {
+            out << matrix[i][j] << " ";
+        }
+        out << endl;
+    }
+}
+
 
 static void computeRow(vector<vector<float>>& matrix, unsigned int n, unsigned int j, unsigned int from, unsigned int to) {
     for (unsigned int i = from; i < to; i++) {
@@ -63,11 +76,15 @@ static void computeRow(vector<vector<float>>& matrix, unsigned int n, unsigned i
     }
 }
 
-void Gauss(vector<vector<float>> &matrix, unsigned int n, unsigned int threadNum) {
+
+void GaussJordan(vector<vector<float>> &matrix, unsigned int n, unsigned int threadNum) {
+    // Определяем количество строк, обрабатываемых в одном потоке
     unsigned int rowsPerThread;
+    // В последнем потоке может быть задействовано больше строк (т.к. n может быть не кратно threadNum)
     unsigned int rowsInLastThread;
 
     if (threadNum > n) {
+        // если количество доступных потоков больше размерности, то используем только n потоков
         threadNum = n;
         rowsPerThread = 1;
         cout << "Number of available threads is greater than matrix dimension. " + to_string(n) + " threads will be used";
@@ -91,7 +108,8 @@ void Gauss(vector<vector<float>> &matrix, unsigned int n, unsigned int threadNum
                 }
             }
             if (matrix[temp][j] == 0) {
-                throw new runtime_error("Matrix determinant equals 0");
+                cout << endl << "Error: matrix determinant equals 0" << endl;
+                exit(1);
             }
             else {
                 // меняем текущую строку со строкой с найденным ненулевым элементом
@@ -124,29 +142,37 @@ void Gauss(vector<vector<float>> &matrix, unsigned int n, unsigned int threadNum
 
 int main(int argc, char* argv[]) {
     string input = argv[1];
+    string output = argv[2];
 
     unsigned int threadNum;
     unsigned int n;
     vector<vector<float>> matrix = readInput(input, &n, &threadNum);
 
-    for (unsigned int i = 0; i < n; i++) {
-        for (unsigned int j = 0; j < 2*n; j++) {
-            cout << matrix[i][j] << "  ";
+    if (n <= 15) {
+        cout << "Initial matrix:" << endl;
+        for (unsigned int i = 0; i < n; i++) {
+            for (unsigned int j = 0; j < n; j++) {
+                cout << matrix[i][j] << "  ";
+            }
+            cout << endl;
         }
-        cout << endl;
     }
 
     cout << endl;
-    Gauss(matrix, n, threadNum);
+    GaussJordan(matrix, n, threadNum);
     cout << endl;
 
-    cout << "Inverse matrix: " << endl;
-    for (unsigned int i = 0; i < n; i++) {
-        for (unsigned int j = 0; j < n; j++) {
-            cout << matrix[i][j+n] << "  ";
+    if (n <= 15) {
+        cout << "Inverse matrix: " << endl;
+        for (unsigned int i = 0; i < n; i++) {
+            for (unsigned int j = 0; j < n; j++) {
+                cout << matrix[i][j + n] << "  ";
+            }
+            cout << endl;
         }
-        cout << endl;
     }
+
+    writeOutput(output, matrix, n);
     
 }
 
